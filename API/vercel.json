@@ -2,10 +2,10 @@
   "version": 2,
   "builds": [
     { "src": "index.html", "use": "@vercel/static" },
-    { "src": "api/*.js", "use": "@vercel/node" }
+    { "src": "API/*.js", "use": "@vercel/node" }  # Changed to 'API'
   ],
   "routes": [
     { "src": "/", "dest": "/index.html" },
-    { "src": "/api/(.*)", "dest": "/api/$1" }
+    { "src": "/api/(.*)", "dest": "/API/$1" }     # Both lowercase and uppercase work
   ]
 }
