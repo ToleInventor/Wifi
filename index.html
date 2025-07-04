@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WiFi Access Portal</title>
+    <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3.2.0/dist/email.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; }
+        .form-group { margin-bottom: 15px; }
+        input { width: 100%; padding: 10px; margin: 5px 0; box-sizing: border-box; }
+        button { background: #0066cc; color: white; border: none; padding: 12px; width: 100%; cursor: pointer; }
+        #ip { background: #f0f0f0; }
+        .countdown { color: #d32f2f; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>WiFi Access Request</h1>
+    <p>You have <span class="countdown">5:00</span> to complete this request</p>
+    
+    <form id="accessForm">
+        <div class="form-group">
+            <label>Full Name:</label>
+            <input type="text" id="name" required>
+        </div>
+        <div class="form-group">
+            <label>Email:</label>
+            <input type="email" id="email" required>
+        </div>
+        <div class="form-group">
+            <label>Access Password:</label>
+            <input type="password" id="password" required>
+        </div>
+        <div class="form-group">
+            <label>Your IP:</label>
+            <input type="text" id="ip" readonly>
+        </div>
+        <button type="submit" id="submitBtn">Submit Request</button>
+    </form>
+    <div id="status"></div>
+
+    <script>
+        // Initialize EmailJS
+        emailjs.init({ publicKey: "VNlcWEKX9wElEZ3Zh" });
+
+        // 5-minute countdown
+        let timeLeft = 300;
+        const timer = setInterval(() => {
+            timeLeft--;
+            const mins = Math.floor(timeLeft / 60);
+            const secs = timeLeft % 60;
+            document.querySelector('.countdown').textContent = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+            
+            if (timeLeft <= 0) {
+                clearInterval(timer);
+                document.getElementById('status').innerHTML = 
+                    '<p style="color: red;">Time expired! Reconnect to WiFi to try again.</p>';
+                document.getElementById('submitBtn').disabled = true;
+            }
+        }, 1000);
+
+        // Auto-detect IP
+        async function getIP() {
+            try {
+                const response = await fetch('https://api.ipify.org?format=json');
+                const data = await response.json();
+                document.getElementById('ip').value = data.ip;
+                return data.ip;
+            } catch (error) {
+                console.error("IP detection failed:", error);
+                document.getElementById('ip').value = "Could not detect";
+                return null;
+            }
+        }
+        getIP();
+
+        // Form submission
+        document.getElementById('accessForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            document.getElementById('status').innerHTML = "Processing request...";
+
+            const ip = document.getElementById('ip').value;
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                // 1. Verify password
+                const authRes = await fetch('/api/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password })
+                });
+
+                if (!authRes.ok) {
+                    throw new Error("Invalid password");
+                }
+
+                // 2. Grant temporary access
+                await fetch('/api/temp-access', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ip, action: 'grant' })
+                });
+
+                // 3. Send approval request
+                await emailjs.send('service_nxb5r9i', 'template_kzighz9', {
+                    name,
+                    email,
+                    ip,
+                    approveUrl: `https://wifi-woad.vercel.app/api/approve?ip=${ip}&action=approve&secret=${process.env.SECRET_KEY}`,
+                    denyUrl: `https://wifi-woad.vercel.app/api/approve?ip=${ip}&action=deny&secret=${process.env.SECRET_KEY}`
+                });
+
+                document.getElementById('status').innerHTML = `
+                    <p style="color: green;">Request submitted successfully!</p>
+                    <p>You now have full internet access for 5 minutes.</p>
+                    <p>Check your email for approval notification.</p>
+                `;
+
+                // Auto-revoke after 5 minutes
+                setTimeout(() => {
+                    document.getElementById('status').innerHTML += 
+                        '<p style="color: orange;">Temporary access expired. Approval pending.</p>';
+                }, 300000);
+
+            } catch (error) {
+                document.getElementById('status').innerHTML = 
+                    `<p style="color: red;">Error: ${error.message}</p>`;
+                btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+  </html>
