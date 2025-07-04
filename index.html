@@ -6,12 +6,88 @@
     <title>WiFi Access Portal</title>
     <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3.2.0/dist/email.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; }
-        .form-group { margin-bottom: 15px; }
-        input { width: 100%; padding: 10px; margin: 5px 0; }
-        button { background: #0066cc; color: white; border: none; padding: 12px; width: 100%; }
-        #ip { background: #f0f0f0; }
-        .countdown { color: #d32f2f; font-weight: bold; }
+        body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+}
+#accessForm {
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
+    padding: 32px 28px;
+    margin-top: 40px;
+}
+h1 {
+    text-align: center;
+    color: #0066cc;
+    margin-top: 40px;
+    letter-spacing: 1px;
+}
+.form-group label {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 6px;
+    display: block;
+}
+input[type="text"], input[type="email"] {
+    border: 1px solid #d0d7e2;
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 1rem;
+    transition: border 0.2s;
+    background: #f9fbfd;
+}
+input[type="text"]:focus, input[type="email"]:focus {
+    border: 1.5px solid #0066cc;
+    outline: none;
+    background: #fff;
+}
+#ip {
+    background: #f0f4f8;
+    color: #888;
+}
+button {
+    background: linear-gradient(90deg, #0066cc 0%, #00bcd4 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 14px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,102,204,0.08);
+    transition: background 0.2s, transform 0.1s;
+}
+button:disabled {
+    background: #b0bec5;
+    cursor: not-allowed;
+}
+button:hover:not(:disabled) {
+    background: linear-gradient(90deg, #005bb5 0%, #0097a7 100%);
+    transform: translateY(-2px) scale(1.01);
+}
+.countdown {
+    color: #d32f2f;
+    font-weight: bold;
+    font-size: 1.2rem;
+    letter-spacing: 1px;
+}
+#status {
+    margin-top: 18px;
+    text-align: center;
+    font-size: 1.1rem;
+}
+@media (max-width: 600px) {
+    #accessForm {
+        padding: 18px 8px;
+    }
+    h1 {
+        font-size: 1.4rem;
+    }
+}
     </style>
 </head>
 <body>
@@ -55,7 +131,7 @@
         // Auto-detect IP
         async function getIP() {
             try {
-                const res = await fetch('https://api.ipify.org?format=json');
+                const res = await fetch('https://API.ipify.org?format=json');
                 const data = await res.json();
                 document.getElementById('ip').value = data.ip;
                 return data.ip;
@@ -79,7 +155,7 @@
 
             try {
                 // 1. Grant temporary access
-                await fetch('/api/temp-access', {
+                await fetch('/API/temp-access', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ ip, action: 'grant' })
